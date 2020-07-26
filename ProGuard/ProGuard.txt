@@ -1,0 +1,90 @@
+Proguard
+
+Reference links: https://blog.mindorks.com/applying-proguard-in-an-android-application
+				https://blog.mindorks.com/things-to-care-while-using-proguard-in-android-application
+				
+
+
+What is Proguard? /Proguard гэж юу вэ?/
+	ProGuard is a free java tool in Android, which helps us to do the following,
+		- Shrink(Minify) the code: Remove unused code in the project.
+		- Obfuscate the code: Rename the names of class, fields, etc.
+		- Optimize the code: Do things like inlining the functions.
+
+	In short, ProGuard makes the following impact on our project,
+
+		- It reduces the size of the application.
+		- It removes the unused classes and methods that contribute to the 64K method counts limit of an Android application.
+		- It makes the application difficult to reverse engineer by obfuscating the code.
+		
+		
+How it is useful for our application? (Add this into the app "build.gradle" file)
+android {
+	...
+	buildTypes {
+		release {
+			minifyEnabled true
+			proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+		}
+	}
+	..
+}
+
+We need to take care of certain things while usin proguard in our android application.
+
+1. Exclude Proguard from Data classess
+	There is some kind of data or model class that is used to fetch some data from the remote database. So, if we are using ProGuard then the Proguard will change the class name, variable name, and method name.
+	In order to avoid this, we should tell the proguard to keep the variables and methods of the User class and don't obfuscate it.
+
+		TODO: Add the below line in your "proguard-rules.pro"
+				-keep class your.fully.qualified.class.name.** { *; }
+			or add "@Keep" annotation into your data
+
+2. Don't use Fragment TAGs while using Proguard
+	Most of the problems that are being face in Proguard are due to its obfuscation property. Same as the case of Fragments.
+	Whenever we make a Fragment we declare some String TAG as "FragmentName.class.getSimpleName()" and use this TAG in our Fragments. But if you are using Proguard, then this may lead to some bug in our app
+		This should be avoided:
+			String TAG = FragmentName.class.getSimpleName() (as the package and Fragments adre different so names can be same in proguard)
+			
+			Just use like: String TAG = "FragmentName";
+
+
+3. Handle Reflecation
+	Alwas keep the class using reflection in your Proguard rules.
+	
+4. Handle view
+	Whenever you create your own view in Android application make sure the view class that you are making os kept in the Proguard rule otherwise you will get class not founad exception.
+	
+	Example: If we are creating a simple vie name "com.projectname.simpleview" and if you are using this view  in your XML file, then the proguard will change your view class names as "a" or something like that and in the XML, your code is calling "com.projectname.simpleview and there is no such class ass it has changed to "a".
+	
+	So, always make sure to keep your Views in the Proguard rules. You can tell the proguard to keep the classes that are extending "View" by adding the below lines in yout "proguard-rules.pro" file:
+
+	-keep public class * extends android.view.View {
+		public <init>(android.content.Context);
+		public <init>(android.content.Context, android.utilAttributeSet);
+		public <init>(android.content.Context, android.util.AttributeSet, int);
+		public void set*();
+	}
+	
+5. Add Proguard rules for libraries
+	In our Android Application, we use a number of open source libraries. But at the same time if you using Proguard then you must include the Proguard rules of the libraries you are using if any.
+
+6. Keep Native codes.
+	While using native code in your Android application i.e. while using c++ code in your Android application, you must be aware of the consequences of the obsfuscation by Proguard. In general, the Proguard can only inpect the Java class. So, if you are calling some Java method from the c++ code and that method has been obfuscated by the Proguard, then the "JNI (Java Native Interface)" will produce method not found exception.
+	
+	JNU - Java Native Interface: Foreign funtion interface programming framwork that enables Java code running in a Java Virtual machine (JVM) to call and be called by native applications(programs specific to a hardware and operating system platform) and libraries written in other languages such as C, C++ and assembly.
+	
+	S, If we are calling some methods from the native code then we must keep those methods in the Proguard rules by adding the below line on the "proguard-rules.pro" file:
+
+		Add this: -keepclasseswithmembernames class * {native <methods>;}
+		
+7. Resource opening from JAR/APK
+	In java, we can load resources from the JAR file or even some libraries load resources from the APK file also. This is of no problem, but whenever we are using Proguard then resources file names will be changed by the Proguard and this files will not be found in the desired packages.
+	
+	So, we sould keep the names of classess that load resources form the APK in your Proguard rules.
+
+8. Additional (Important!)
+	If we are done with the optimization of our code then you can put all the files in the root packages as this will reduce the usage of full qualified names like "com.projectname.proguard.example". To use this feature, add the below line in your "proguard-rules.pro" file:
+		
+		Add this: -repackageclasses
+	In java, we can load resources from the JAR file or even some libraries load resources from the APK file also. This is of no problem, but whenever we are using Proguard then resources file names will be changed by the Proguard and this files will not be found in the desired packages.
