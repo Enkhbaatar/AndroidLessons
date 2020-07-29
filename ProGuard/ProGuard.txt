@@ -88,3 +88,19 @@ We need to take care of certain things while usin proguard in our android applic
 		
 		Add this: -repackageclasses
 	In java, we can load resources from the JAR file or even some libraries load resources from the APK file also. This is of no problem, but whenever we are using Proguard then resources file names will be changed by the Proguard and this files will not be found in the desired packages.
+	
+	It means you can shrink this class if it is not used anywhere. If you keep it don't rename this class.
+	-keep, allowshrinking class com.packagename.className{}
+	-keep, allowshrinking class * extends com.packagename.className{}
+	
+	It means if keeping this class don't rename the memebers.
+	-keepclassmembers class com.packagename.** {
+		*** get*();
+		void set*(***);
+	}
+	
+
+	Consider Size Early
+		- Write keep rules alongside with coresponding code
+		- Add structure to ease describing reflection
+		- Continuously test an optimized build
